@@ -1,27 +1,29 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+import uvicorn
+from starlette.staticfiles import StaticFiles
+
+from api import file_loader
+
+from api import api
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="files/static"), name="static")
+app.include_router(api.router)
+app.include_router(file_loader.router)
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/")
-async def home():
+async def root():
     return FileResponse(
-        "build/index.html", 200
+        "static/index.html",
+        200
     )
 
 
-@app.get("/api/get_info")
-async def get_infos():
-    return JSONResponse(
-        dict(
-            x=5,
-            y=3,
-            z=42,
-            a=420
-        ),
-        headers={"Access-Control-Allow-Origin": "*"}
-    )
+if __name__ == '__main__':
+    uvicorn.run("main:app", host="0.0.0.0", workers=2, port=5000)
+
