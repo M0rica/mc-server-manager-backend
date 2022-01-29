@@ -1,13 +1,14 @@
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
-from api.bukkit.bukkit_manager import BukkitManager
+from api.server_manager import ServerManager
+from typing import Union
 
 router = APIRouter(
     prefix="/api/servers",
     responses={404: {"description": "Not found"}},
 )
 
-bukkit_manager = BukkitManager
+server_manager = ServerManager()
 
 
 class ServerCreationData(BaseModel):
@@ -20,7 +21,7 @@ class ServerCreationData(BaseModel):
     version: str = Field(..., title="Server version to install",
                          description="The Minecraft version of this server."
                                      "\n\nFormat: 1.x.x")
-    seed: str = Field(..., title="Seed for the world generator")
+    seed: Union[str, None] = Field(None, title="Seed for the world generator")
     gamemode: str = Field(..., title="Gamemode for the server",
                           description="One of [adventure, creative, survival, spectator]")
     leveltype: str = Field(..., title="Leveltype for the world",
@@ -30,7 +31,7 @@ class ServerCreationData(BaseModel):
         schema_extra = {
             "example": {
                 "name": "My Minecraft Server",
-                "type": "minecraft",
+                "type": "spigot",
                 "version": "1.18.0",
                 "seed": "MySeed",
                 "gamemode": "survival",
@@ -46,7 +47,7 @@ class ServerCreationResponse(BaseModel):
     message: str = Field(..., title="The message the server will respond with",
                          description="Will say something like 'Server created successfully!' if there was no error."
                                      "\n\nIf an error occurred, will say something like 'Server creation failed!'.")
-    error: str | None = Field(None, title="The error message if something went wrong.",
+    error: Union[str, None] = Field(None, title="The error message if something went wrong.",
                               description="Will give the error why creating a new server failed."
                                           "\n\nEmpty if there was no error.")
 
@@ -60,6 +61,18 @@ class ServerCreationResponse(BaseModel):
 
         }
 
+class ServerIDsResponse(BaseModel):
+    ids: list = Field(..., title="List of all server IDs",
+                      description="Returns a list with all server IDs")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "ids": [
+                    1001, 3425, 1234
+                ]
+            }
+        }
 
 class ServerStatusResponse(BaseModel):
     status: str = Field(..., title="Status of the server",
@@ -83,22 +96,20 @@ def create_server(request: ServerCreationData):
     Create a new server with the given data
     """
     print(request)
+    id = server_manager.create_server(request.dict())
     return {
-        "id": 1,
+        "id": id,
         "message": "Server created successfully!"
     }
 
 
-@router.get("/{server_id}/status", response_model=ServerStatusResponse)
+@router.get("/", response_model=ServerIDsResponse)
+def get_server_ids():
+    return
+
+@router.get("/{server_id}", response_model=ServerStatusResponse)
 def get_server_status(server_id: int):
     """
     Get the status of the server with the given ID
     """
-    return {
-        "status": "running"
-    }
-
-
-@router.get("/{server_id}/properties")
-def get_minecraft_properties(server_id: int):
-    return
+    return server_manager.get_server_data(server_id)

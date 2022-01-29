@@ -3,14 +3,16 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from api import utils
+from mcstatus import MinecraftServer as MCServer
 
 
 class MinecraftServer:
 
-    def __init__(self, id: int, name: str, created_at: datetime, path_data: dict):
+    def __init__(self, id: int, name: str, created_at: datetime, port: int, path_data: dict):
         self.id = id
         self.name = name
         self.created_at = created_at
+        self.port = port
         self.path = path_data["path"]
         self.jar_path = os.path.join(self.path, path_data["jar"])
 
@@ -27,7 +29,7 @@ class MinecraftServer:
         self.server_properties = utils.load_properties(os.path.join(self.path, "server.properties"))
 
     def save_properties(self):
-        utils.save_properties(os.path.join(self.path, "server.properties"))
+        utils.save_properties(os.path.join(self.path, "server.properties"), self.server_properties)
 
     def update(self):
         if self.get_status() == "stopped":
@@ -64,3 +66,24 @@ class MinecraftServer:
                 return "running"
         else:
             return "stopped"
+
+    def get_server_stats(self):
+        server = MCServer("localhost", self.port)
+        status = server.status()
+        return {
+            "ping": status.latency,
+            "players": status.players.online
+        }
+
+    def compile_data(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "created_at": self.created_at,
+            "port": self.port,
+            "ram": self.ram_amount,
+            "status": self.get_status(),
+            "path": self.path,
+            "server_properties": self.server_properties,
+            "online_stats": self.get_server_stats()
+        }

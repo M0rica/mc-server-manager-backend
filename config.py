@@ -21,6 +21,9 @@ def get_default_config():
     return {
         "bukkit": {
             "path": "bukkit",
+        },
+        "servers": {
+            "path": "data"
         }
     }
 
