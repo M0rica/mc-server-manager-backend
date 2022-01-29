@@ -2,15 +2,26 @@ import webbrowser
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
 from starlette.staticfiles import StaticFiles
+from config import load_config
+load_config()
 
 from api import server_routing
 
 from api import api
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 app.include_router(api.router)
 app.include_router(server_routing.router)
