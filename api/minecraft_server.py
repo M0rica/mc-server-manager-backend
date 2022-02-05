@@ -1,24 +1,39 @@
 import os
 import subprocess
-from dataclasses import dataclass
 from datetime import datetime
+from dataclasses import dataclass
 from api import utils
 from mcstatus import MinecraftServer as MCServer
 
 
+@dataclass
+class MinecraftServerNetworkConfig:
+    port: int
+
+
+@dataclass
+class MinecraftServerHardwareConfig:
+    ram: int
+
+
+@dataclass
+class MinecraftServerPathData:
+    path: str
+    jar_path: str
+    server_properties_file: str
+
 class MinecraftServer:
 
-    def __init__(self, id: int, name: str, created_at: datetime, port: int, path_data: dict):
+    def __init__(self, id: int, name: str, created_at: datetime, path_data: MinecraftServerPathData,
+                 network_config: MinecraftServerNetworkConfig, hardware_config: MinecraftServerHardwareConfig):
         self.id = id
         self.name = name
         self.created_at = created_at
-        self.port = port
-        self.path = path_data["path"]
-        self.jar_path = os.path.join(self.path, path_data["jar"])
+        self.network_config: MinecraftServerNetworkConfig = network_config
+        self.path_data = path_data
 
         self.server_properties = {}
 
-        self.ram_amount = 1024
         self.starting = False
         self.stopping = False
 
@@ -26,10 +41,10 @@ class MinecraftServer:
         self._logs = ""
 
     def load_properties(self):
-        self.server_properties = utils.load_properties(os.path.join(self.path, "server.properties"))
+        self.server_properties = utils.load_properties(self.path_data.server_properties_file)
 
     def save_properties(self):
-        utils.save_properties(os.path.join(self.path, "server.properties"), self.server_properties)
+        utils.save_properties(self.path_data.server_properties_file, self.server_properties)
 
     def update(self):
         if self.get_status() == "stopped":
@@ -75,15 +90,15 @@ class MinecraftServer:
             "players": status.players.online
         }
 
-    def compile_data(self):
+    def __dict__(self):
         return {
             "id": self.id,
             "name": self.name,
             "created_at": self.created_at,
-            "port": self.port,
-            "ram": self.ram_amount,
+            "network_config": dict(self.network_config),
+            "hardware_config": dict(self.hardware_config),
             "status": self.get_status(),
-            "path": self.path,
+            "path": dict(self.path_data),
             "server_properties": self.server_properties,
             "online_stats": self.get_server_stats()
         }

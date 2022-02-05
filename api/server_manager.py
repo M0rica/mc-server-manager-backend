@@ -6,9 +6,12 @@ import subprocess
 from datetime import datetime
 from threading import Thread
 
+import requests
+from bs4 import BeautifulSoup
+
 from config import get_config
 from api.minecraft_server import MinecraftServer
-from api.bukkit.bukkit_creator import BukkitCreator
+
 
 class ServerManager:
     def __init__(self):
@@ -17,15 +20,15 @@ class ServerManager:
         self.servers_path: str
         self.build_path: str # directory buildtools is in and where new versions will be build
         self.build_tools_path: str
-        self.build_proc: subprocess.Popen = None
+        self.install_proc: subprocess.Popen = None
         self.install_logs = ""
 
-        self.available_versions = []
+        self.available_versions = {}
         self._servers = {}
-        self._bukkit_creator = BukkitCreator()
 
         self.load_config()
         self.load_servers()
+        self._get_available_minecraft_versions()
 
     def load_config(self):
         config = get_config()["servers"]
@@ -42,7 +45,7 @@ class ServerManager:
     def save_servers(self):
         server_data = [{id, dict(server)} for id, server in self._servers]
         save = {
-            "servers": self._servers
+            "servers": server_data
         }
         with open(os.path.join(self.servers_path, "servers.json"), "r") as f:
             json.dump(save, f)
@@ -55,6 +58,20 @@ class ServerManager:
         if server is not None:
             server.update()
         return server
+
+    def _get_available_minecraft_versions(self):
+        def get_webpage(url):
+            headers = {
+                "User-Agent": "Mozilla/5.0 (X11; Linux i686; rv:96.0) Gecko/20100101 Firefox/96.0"
+            }
+            return requests.get(url, headers=headers).text
+
+        webpage = get_webpage("https://mcversions.net")
+        soup = BeautifulSoup(webpage, "html.parser")
+        releases = soup.find_all("div",
+                                 {"class": "item flex items-center p-3 border-b border-gray-700 snap-start ncItem"})
+        for version in releases:
+            self.available_versions[version.get("id")] = "https://mcversions.net" + version.find("a", text="Download").get("href")
 
     def create_server(self, data: dict) -> int:
         id = 0
@@ -73,10 +90,10 @@ class ServerManager:
             "path": server_path,
             "jar": f"{data['type']}.jar"
         }
-        if data["type"] in ["spigot", "craftbukkit"]:
+        """if data["type"] in ["spigot", "craftbukkit"]:
             build_path = self._bukkit_creator.create_server(data)
             shutil.copy(build_path,
-                        os.path.join(server_path, f"{data['type']}.jar"))
+                        os.path.join(server_path, f"{data['type']}.jar"))"""
         self._servers[id] = MinecraftServer(id, data["name"], datetime.now(), path_data)
         return id
 
@@ -85,7 +102,6 @@ class ServerManager:
             "status": self._get_server(server_id).get_status()
         }
         return status
-
 
     def get_server_data(self, server_id: int) -> dict:
         server = self._get_server(server_id)
