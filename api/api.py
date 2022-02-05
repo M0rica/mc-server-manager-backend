@@ -24,7 +24,9 @@ class AvailableVersionsResponse(BaseModel):
 
 @router.get("/available_versions", response_model=AvailableVersionsResponse)
 def get_available_versions():
-    return server_manager.available_versions
+    return {
+        "versions": list(server_manager.available_versions.keys())
+    }
 
 
 server_router = APIRouter(
