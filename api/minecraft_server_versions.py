@@ -6,7 +6,7 @@ class AvailableMinecraftServerVersions:
 
     def __init__(self):
         self.available_versions = {}
-        self._get_available_minecraft_versions()
+        self._get_available_minecraft_versions()  # load on init
 
     def _get_available_minecraft_versions(self):
         def get_webpage(url):
