@@ -148,8 +148,6 @@ class MinecraftServer:
         :return:
         """
         if self.get_status() == "running":
-            print("test")
-            print(self._server_proc.stdin.writable())
             self._server_proc.stdin.write(f"{command} {player}\n")
             self._server_proc.stdin.flush()
             return True
