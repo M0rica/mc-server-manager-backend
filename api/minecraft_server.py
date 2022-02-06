@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -26,6 +27,7 @@ class MinecraftServerHardwareConfig:
 class MinecraftServerPathData:
     base_path: str
     jar_path: str
+    absolut_jar_path: str
     server_properties_file: str
 
 @dataclass
@@ -64,7 +66,7 @@ class MinecraftServer:
                 }
                 data = requests.get(self.server_versions.get_download_link(self.server_manager_data.version),
                                     headers=headers).content
-                with open(self.path_data.jar_path, "wb") as f:
+                with open(self.path_data.absolut_jar_path, "wb") as f:
                     f.write(data)
                 create_eula(self.path_data.base_path)
                 self.server_manager_data.installed = True
@@ -83,19 +85,39 @@ class MinecraftServer:
                 self.save_properties()
             self.starting = False
             self._server_proc = None
-        elif status != "installing" and self._server_proc.poll() is None:
-            self._logs += self._server_proc.communicate()
+        elif status != "installing" and self._server_proc is not None:
+            line = self._server_proc.stdout.readline()
+            self._logs += line
+            print(line)
+                #line = self._server_proc.stdout.readline()
+            self._server_proc.stdout.flush()
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
 
-    def start(self):
-        if self._server_proc is None or self._server_proc.poll() is not None:
+    def start(self) -> bool:
+        if self.server_manager_data.installed and self._server_proc is None or self._server_proc.poll() is not None:
+            print(self.path_data.jar_path)
             self._server_proc = subprocess.Popen(
-                ["java", f"-Xmx{self.ram_amount}M", f"-Xms{self.ram_amount}M", "-jar", self.jar_path, "-o", "true",
-                 "--nogui"],
+                ["java", f"-Xmx{self.hardware_config.ram}M", f"-Xms{self.hardware_config.ram}M", "-jar",
+                 self.path_data.jar_path, "--nogui"], cwd=self.path_data.base_path,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            print("Starting")
             self.starting = True
+            return True
+        else:
+            return False
+
+    def stop(self) -> bool:
+        if self._server_proc is not None and self._server_proc.poll() is None:
+            if not self.stopping:
+                self._server_proc.stdin.write(b"stop\n")
+                self._server_proc.stdin.close()
+                self._server_proc.stdin.flush()
+            else:
+                return False
+        else:
+            return False
 
     def terminate(self):
         if self._server_proc is not None and self._server_proc.poll() is None:
@@ -132,7 +154,7 @@ class MinecraftServer:
             "status": self.get_status(),
             "network_config": self.network_config.__dict__,
             "hardware_config": self.hardware_config.__dict__,
-            "path": self.path_data.__dict__,
+            "path_data": self.path_data.__dict__,
             "server_manager_data": self.server_manager_data.__dict__,
             "server_properties": self.server_properties,
             "online_stats": self.get_server_stats()

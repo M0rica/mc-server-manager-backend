@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from threading import Thread
+from typing import Tuple
 
 from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
@@ -35,18 +36,29 @@ class ServerManager:
         self.servers_path = os.path.join(self.base_path, "servers")
 
     def load_servers(self):
-        file_location = os.path.join(self.base_path, "servers.json")
+        file_location = os.path.join(self.servers_path, "servers.json")
         if os.path.isfile(file_location):
-            with open(file_location, "w") as f:
+            with open(file_location, "r") as f:
                 data = json.load(f)
+            servers = data["servers"]
+            for server_id in servers:
+                server_data = servers[server_id]
+                print(server_data)
+                network_config = MinecraftServerNetworkConfig(**server_data["network_config"])
+                hardware_config = MinecraftServerHardwareConfig(**server_data["hardware_config"])
+                path_data = MinecraftServerPathData(**server_data["path_data"])
+                server_manager_data = MCServerManagerData(**server_data["server_manager_data"])
+                server_id = server_data["id"]
+                self._servers[server_id] = MinecraftServer(server_id, server_data["name"], path_data, network_config,
+                                         hardware_config, server_manager_data, self.available_versions)
 
     def save_servers(self):
         server_data = self.get_all_server_data()
         save = {
             "servers": server_data
         }
-        with open(os.path.join(self.servers_path, "servers.json"), "r") as f:
-            json.dump(save, f)
+        with open(os.path.join(self.servers_path, "servers.json"), "w") as f:
+            json.dump(save, f, default=str, indent=4)
 
     def server_exists(self, server_id: int) -> bool:
         return server_id in self._servers
@@ -76,7 +88,8 @@ class ServerManager:
             shutil.copy(build_path,
                         os.path.join(server_path, f"{data['type']}.jar"))"""
         path_data = MinecraftServerPathData(base_path=server_path,
-                                            jar_path=os.path.join(server_path, f"{data['type']}.jar"),
+                                            absolut_jar_path=os.path.join(server_path, f"{data['type']}.jar"),
+                                            jar_path=f"{data['type']}.jar",
                                             server_properties_file=os.path.join(server_path, "server.properties"))
         port = utils.get_free_port()
         network_config = MinecraftServerNetworkConfig(port=port)
@@ -86,12 +99,46 @@ class ServerManager:
                                  self.available_versions)
         self._servers[server_id] = server
         server.install()
-        return server_id
+        self.save_servers()
 
     def delete_server(self, server_id: int):
         server = self._get_server(server_id)
         shutil.rmtree(server.path_data.base_path)
         del self._servers[server_id]
+
+    def start_server(self, server_id: int) -> Tuple[bool, str]:
+        server = self._get_server(server_id)
+        if server is not None:
+            success = server.start()
+            if success:
+                message = "Server started successfully!"
+            else:
+                status = server.get_status()
+                if status == "installing":
+                    message = "Couldn't start server: not installed!"
+                else:
+                    message = "Couldn't start server: already running!"
+        else:
+            success = False
+            message = "Couldn't start server: does not exist!"
+        return success, message
+
+    def stop_server(self, server_id: int) -> Tuple[bool, str]:
+        server = self._get_server(server_id)
+        if server is not None:
+            success = server.stop()
+            if success:
+                message = "Server is stopping"
+            else:
+                status = server.get_status()
+                if status == "stopping":
+                    message = "Couldn't stop server: already stopping!"
+                else:
+                    message = "Couldn't stop server: not running!"
+        else:
+            success = False
+            message = "Couldn't stop server: does not exist!"
+        return success, message
 
     def get_server_ids(self):
         return list(self._servers.keys())

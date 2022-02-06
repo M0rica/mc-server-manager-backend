@@ -174,7 +174,11 @@ def get_server_status(server_id: int):
 def server_action(server_id: int, action_data: ServerActionData):
     action = action_data.action
     print(action)
+    if action == "start":
+        success, message = server_manager.start_server(server_id)
+    elif action == "stop":
+        success, message = server_manager.stop_server(server_id)
     return {
-        "success": True,
-        "message": "Message"
+        "success": success,
+        "message": message
     }
