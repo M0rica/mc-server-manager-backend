@@ -2,8 +2,15 @@ import os
 import subprocess
 from datetime import datetime
 from dataclasses import dataclass
+from threading import Thread
+
+import requests
+
 from api import utils
 from mcstatus import MinecraftServer as MCServer
+
+from api.minecraft_server_versions import AvailableMinecraftServerVersions
+from api.utils import create_eula
 
 
 @dataclass
@@ -18,19 +25,28 @@ class MinecraftServerHardwareConfig:
 
 @dataclass
 class MinecraftServerPathData:
-    path: str
+    base_path: str
     jar_path: str
     server_properties_file: str
 
+@dataclass
+class MCServerManagerData:
+    installed: bool
+    version: str
+    created_at: datetime
+
 class MinecraftServer:
 
-    def __init__(self, id: int, name: str, created_at: datetime, path_data: MinecraftServerPathData,
-                 network_config: MinecraftServerNetworkConfig, hardware_config: MinecraftServerHardwareConfig):
+    def __init__(self, id: int, name: str, path_data: MinecraftServerPathData,
+                 network_config: MinecraftServerNetworkConfig, hardware_config: MinecraftServerHardwareConfig,
+                 server_manager_data: MCServerManagerData, server_versions: AvailableMinecraftServerVersions):
         self.id = id
         self.name = name
-        self.created_at = created_at
         self.network_config: MinecraftServerNetworkConfig = network_config
+        self.hardware_config = hardware_config
         self.path_data = path_data
+        self.server_manager_data = server_manager_data
+        self.server_versions = server_versions
 
         self.server_properties = {}
 
@@ -39,6 +55,19 @@ class MinecraftServer:
 
         self._server_proc: subprocess.Popen = None
         self._logs = ""
+
+    def install(self):
+        if not self.server_manager_data.installed:
+            if self.server_manager_data.version in self.server_versions.available_versions:
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (X11; Linux i686; rv:96.0) Gecko/20100101 Firefox/96.0"
+                }
+                data = requests.get(self.server_versions.available_versions[self.server_manager_data.version],
+                                    headers=headers).content
+                with open(self.path_data.jar_path, "wb") as f:
+                    f.write(data)
+                create_eula(self.path_data.base_path)
+                self.server_manager_data.installed = True
 
     def load_properties(self):
         self.server_properties = utils.load_properties(self.path_data.server_properties_file)
@@ -94,11 +123,11 @@ class MinecraftServer:
         return {
             "id": self.id,
             "name": self.name,
-            "created_at": self.created_at,
             "network_config": dict(self.network_config),
             "hardware_config": dict(self.hardware_config),
             "status": self.get_status(),
             "path": dict(self.path_data),
+            "server_manager_data": dict(self.server_manager_data),
             "server_properties": self.server_properties,
             "online_stats": self.get_server_stats()
         }

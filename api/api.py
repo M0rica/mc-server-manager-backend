@@ -4,11 +4,14 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from api.server_manager import ServerManager
+from api.minecraft_server_versions import AvailableMinecraftServerVersions
 
 router = APIRouter(
     prefix="/api",
     responses={404: {"description": "Not found"}},
 )
+
+erver_versions = AvailableMinecraftServerVersions()
 
 
 class AvailableVersionsResponse(BaseModel):
@@ -24,8 +27,11 @@ class AvailableVersionsResponse(BaseModel):
 
 @router.get("/available_versions", response_model=AvailableVersionsResponse)
 def get_available_versions():
+    """
+    Get all supported minecraft server versions
+    """
     return {
-        "versions": list(server_manager.available_versions.keys())
+        "versions": list(server_versions.available_versions.keys())
     }
 
 

@@ -6,11 +6,10 @@ import subprocess
 from datetime import datetime
 from threading import Thread
 
-import requests
-from bs4 import BeautifulSoup
-
+from api import utils
 from config import get_config
-from api.minecraft_server import MinecraftServer
+from api.minecraft_server import MinecraftServer, MinecraftServerPathData, MinecraftServerNetworkConfig, \
+    MinecraftServerHardwareConfig, MCServerManagerData
 
 
 class ServerManager:
@@ -28,7 +27,6 @@ class ServerManager:
 
         self.load_config()
         self.load_servers()
-        self._get_available_minecraft_versions()
 
     def load_config(self):
         config = get_config()["servers"]
@@ -59,20 +57,6 @@ class ServerManager:
             server.update()
         return server
 
-    def _get_available_minecraft_versions(self):
-        def get_webpage(url):
-            headers = {
-                "User-Agent": "Mozilla/5.0 (X11; Linux i686; rv:96.0) Gecko/20100101 Firefox/96.0"
-            }
-            return requests.get(url, headers=headers).text
-
-        webpage = get_webpage("https://mcversions.net")
-        soup = BeautifulSoup(webpage, "html.parser")
-        releases = soup.find_all("div",
-                                 {"class": "item flex items-center p-3 border-b border-gray-700 snap-start ncItem"})
-        for version in releases:
-            self.available_versions[version.get("id")] = "https://mcversions.net" + version.find("a", text="Download").get("href")
-
     def create_server(self, data: dict) -> int:
         id = 0
         while id != 0 and id not in self._servers:
@@ -86,15 +70,20 @@ class ServerManager:
         if os.path.exists(server_path):
             shutil.rmtree(server_path)
         os.makedirs(server_path)
-        path_data = {
-            "path": server_path,
-            "jar": f"{data['type']}.jar"
-        }
         """if data["type"] in ["spigot", "craftbukkit"]:
             build_path = self._bukkit_creator.create_server(data)
             shutil.copy(build_path,
                         os.path.join(server_path, f"{data['type']}.jar"))"""
-        self._servers[id] = MinecraftServer(id, data["name"], datetime.now(), path_data)
+        path_data = MinecraftServerPathData(base_path=server_path,
+                                            jar_path=os.path.join(server_path, f"{data['type']}.jar"),
+                                            server_properties_file=os.path.join(server_path, "server.properties"))
+        port = utils.get_free_port()
+        network_config = MinecraftServerNetworkConfig(port=port)
+        hardware_config = MinecraftServerHardwareConfig(ram=1024)
+        server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
+        server = MinecraftServer(id, data["name"], path_data, network_config, hardware_config, server_manager_data)
+        self._servers[id] = server
+        server.install()
         return id
 
     def get_server_status(self, server_id: int) -> dict:
