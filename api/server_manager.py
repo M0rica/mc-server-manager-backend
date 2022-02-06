@@ -11,7 +11,7 @@ from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
 from config import get_config
 from api.minecraft_server import MinecraftServer, MinecraftServerPathData, MinecraftServerNetworkConfig, \
-    MinecraftServerHardwareConfig, MCServerManagerData
+    MinecraftServerHardwareConfig, MCServerManagerData, MinecraftData
 
 
 class ServerManager:
@@ -65,8 +65,6 @@ class ServerManager:
 
     def _get_server(self, server_id: int) -> MinecraftServer:
         server = self._servers.get(server_id)
-        if server is not None:
-            server.update()
         return server
 
     def create_server(self, data: dict) -> int:
@@ -94,17 +92,22 @@ class ServerManager:
         port = utils.get_free_port()
         network_config = MinecraftServerNetworkConfig(port=port)
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
+        minecraft_data = MinecraftData(seed=data["seed"], gamemode=data["gamemode"], leveltype=data["leveltype"])
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
-        server = MinecraftServer(server_id, data["name"], path_data, network_config, hardware_config, server_manager_data,
-                                 self.available_versions)
+        server = MinecraftServer(server_id, data["name"], path_data, network_config, hardware_config,
+                                 server_manager_data, self.available_versions)
         self._servers[server_id] = server
-        server.install()
+        server.install(minecraft_data)
         self.save_servers()
 
     def delete_server(self, server_id: int):
         server = self._get_server(server_id)
         shutil.rmtree(server.path_data.base_path)
         del self._servers[server_id]
+
+    def update_servers(self):
+        for server in self._servers.values():
+            server.update()
 
     def start_server(self, server_id: int) -> Tuple[bool, str]:
         server = self._get_server(server_id)

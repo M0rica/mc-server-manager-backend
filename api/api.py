@@ -48,7 +48,7 @@ class ServerCreationData(BaseModel):
     name: str = Field(..., title="Display name of the server")
     type: str = Field(..., title="Server type to install",
                       description="The type of server that should be installed."
-                                  "\n\nNormal Server: minecraft"
+                                  "\n\nVanilla Server: minecraft"
                                   "\n\nSpigot: spigot"
                                   "\n\nCraftbukkit: craftbukkit")
     version: str = Field(..., title="Server version to install",

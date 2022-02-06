@@ -22,10 +22,17 @@ def save_properties(filepath: str, data: dict, sep='='):
     """
     Save the data dict to file as properties file
     """
-    pass
+    properties_string = ""
+    for key in data:
+        properties_string += f"{key}={data[key]}\n"
+    with open(filepath, "w") as f:
+        f.write(properties_string)
 
 
 def create_eula(filepath):
+    """
+    Create eula.txt with eula=true
+    """
     eula_string = "#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://account.mojang.com/documents/minecraft_eula)." \
                   "\n#Mon Mar 20 21:15:37 PDT 2017" \
                   "\neula=true"

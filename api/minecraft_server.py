@@ -36,6 +36,12 @@ class MCServerManagerData:
     version: str
     created_at: datetime
 
+@dataclass
+class MinecraftData:
+    seed: str
+    gamemode: str
+    leveltype: str
+
 class MinecraftServer:
 
     def __init__(self, id: int, name: str, path_data: MinecraftServerPathData,
@@ -57,7 +63,7 @@ class MinecraftServer:
         self._server_proc: subprocess.Popen = None
         self._logs = ""
 
-    def install(self):
+    def install(self, install_data: MinecraftData):
         if not self.server_manager_data.installed:
             if self.server_manager_data.version in self.server_versions.available_versions:
                 os.makedirs(self.path_data.base_path, exist_ok=True)
@@ -70,6 +76,16 @@ class MinecraftServer:
                     f.write(data)
                 create_eula(self.path_data.base_path)
                 self.server_manager_data.installed = True
+
+                self.server_properties = {
+                    "server-port": self.network_config.port,
+                    "query.port": self.network_config.port,
+                    "level-name": "world/world",
+                    "level-seed": install_data.seed,
+                    "level-type": install_data.leveltype,
+                    "gamemode": install_data.gamemode
+                }
+                self.save_properties()
 
     def load_properties(self):
         self.server_properties = utils.load_properties(self.path_data.server_properties_file)
@@ -87,10 +103,8 @@ class MinecraftServer:
             self._server_proc = None
         elif status != "installing" and self._server_proc is not None:
             line = self._server_proc.stdout.readline()
-            self._logs += line
             print(line)
-                #line = self._server_proc.stdout.readline()
-            self._server_proc.stdout.flush()
+            self._logs += line
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
 

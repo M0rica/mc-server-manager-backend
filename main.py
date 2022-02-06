@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 import uvicorn
+from fastapi_utils.tasks import repeat_every
 from starlette.staticfiles import StaticFiles
 from config import load_config
 load_config()
@@ -25,6 +26,12 @@ app.include_router(api.router)
 app.include_router(api.server_router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.on_event("startup")
+@repeat_every(seconds=0.1)
+def update_servers():
+    api.server_manager.update_servers()
 
 
 @app.get("/")
