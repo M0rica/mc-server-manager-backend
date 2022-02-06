@@ -102,9 +102,10 @@ class MinecraftServer:
             self.starting = False
             self._server_proc = None
         elif status != "installing" and self._server_proc is not None:
-            line = self._server_proc.stdout.readline()
-            print(line)
-            self._logs += line
+            for i in range(3):
+                line = self._server_proc.stdout.readline()
+                print(line)
+                self._logs += line
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
 
@@ -125,9 +126,10 @@ class MinecraftServer:
     def stop(self) -> bool:
         if self._server_proc is not None and self._server_proc.poll() is None:
             if not self.stopping:
-                self._server_proc.stdin.write(b"stop\n")
+                self._server_proc.stdin.write("stop\n")
                 self._server_proc.stdin.close()
-                self._server_proc.stdin.flush()
+                #self._server_proc.stdin.flush()
+                return True
             else:
                 return False
         else:
