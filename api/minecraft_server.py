@@ -76,13 +76,14 @@ class MinecraftServer:
         utils.save_properties(self.path_data.server_properties_file, self.server_properties)
 
     def update(self):
-        if self.get_status() == "stopped":
+        status = self.get_status()
+        if status == "stopped":
             if self.stopping:
                 self.stopping = False
                 self.save_properties()
             self.starting = False
             self._server_proc = None
-        elif self._server_proc.poll() is None:
+        elif status != "installing" and self._server_proc.poll() is None:
             self._logs += self._server_proc.communicate()
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
