@@ -88,6 +88,9 @@ class ServerManager:
         server.install()
         return id
 
+    def get_server_ids(self):
+        return list(self._servers.keys())
+
     def get_server_status(self, server_id: int) -> dict:
         status = {
             "status": self._get_server(server_id).get_status()

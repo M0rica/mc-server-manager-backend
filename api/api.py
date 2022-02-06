@@ -109,8 +109,8 @@ class ServerIDsResponse(BaseModel):
 
 
 class ServerStatusResponse(BaseModel):
-    status: str = Field(..., title="Status of the server",
-                        description="One of [stopped, starting, running, stopping]")
+    status: str = Field(..., title="Complete server data",
+                        description="Returns a dict with all of this server's data")
 
     class Config:
         schema_extra = {
@@ -139,7 +139,9 @@ def create_server(request: ServerCreationData):
 
 @server_router.get("/", response_model=ServerIDsResponse)
 def get_server_ids():
-    return
+    return {
+        "ids": server_manager.get_server_ids()
+    }
 
 
 @server_router.get("/{server_id}", response_model=ServerStatusResponse)
