@@ -127,8 +127,8 @@ class MinecraftServer:
         if self._server_proc is not None and self._server_proc.poll() is None:
             if not self.stopping:
                 self._server_proc.stdin.write("stop\n")
-                self._server_proc.stdin.close()
-                #self._server_proc.stdin.flush()
+                #self._server_proc.stdin.close()
+                self._server_proc.stdin.flush()
                 return True
             else:
                 return False
@@ -138,6 +138,19 @@ class MinecraftServer:
     def terminate(self):
         if self._server_proc is not None and self._server_proc.poll() is None:
             self._server_proc.terminate()
+
+    def player_command(self, player: str, command: str) -> bool:
+        """
+        Perform actions on the server that require a command followed by a player name
+        :param player: the player's name
+        :param command: the command to execute, such as /ban or /kick
+        :return:
+        """
+        if self.get_status() == "running":
+            self._server_proc.stdin.write(f"{command} {player}\n")
+            return True
+        else:
+            return False
 
     def get_status(self) -> str:
         if self._server_proc is not None and self._server_proc.poll() is None:

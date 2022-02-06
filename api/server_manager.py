@@ -49,8 +49,10 @@ class ServerManager:
                 path_data = MinecraftServerPathData(**server_data["path_data"])
                 server_manager_data = MCServerManagerData(**server_data["server_manager_data"])
                 server_id = server_data["id"]
-                self._servers[server_id] = MinecraftServer(server_id, server_data["name"], path_data, network_config,
+                server = MinecraftServer(server_id, server_data["name"], path_data, network_config,
                                          hardware_config, server_manager_data, self.available_versions)
+                server.load_properties()
+                self._servers[server_id] = server
 
     def save_servers(self):
         server_data = self.get_all_server_data()
@@ -123,7 +125,7 @@ class ServerManager:
                     message = "Couldn't start server: already running!"
         else:
             success = False
-            message = "Couldn't start server: does not exist!"
+            message = "Couldn't start server: server does not exist!"
         return success, message
 
     def stop_server(self, server_id: int) -> Tuple[bool, str]:
@@ -140,7 +142,24 @@ class ServerManager:
                     message = "Couldn't stop server: not running!"
         else:
             success = False
-            message = "Couldn't stop server: does not exist!"
+            message = "Couldn't stop server: server does not exist!"
+        return success, message
+
+    def player_command(self, server_id: int, player: str, command: str) -> Tuple[bool, str]:
+        server = self._get_server(server_id)
+        if server is not None:
+            success = server.player_command(player, command)
+            if success:
+                message = f"Successfully {command}ed {player}"
+            else:
+                status = server.get_status()
+                if status != "running":
+                    message = f"Failed to {command} {player}: server is offline!"
+                else:
+                    message = f"Failed to {command} {player}: unknown error"
+        else:
+            success = False
+            message = f"Failed to {command} {player}: server does not exist!"
         return success, message
 
     def get_server_ids(self):

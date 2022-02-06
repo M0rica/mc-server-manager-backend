@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Tuple
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
@@ -171,13 +171,33 @@ def get_server_status(server_id: int):
 
 
 @server_router.post("/{server_id}/action", response_model=ServerActionResponse)
-def server_action(server_id: int, action_data: ServerActionData):
-    action = action_data.action
+def server_action(server_id: int, data: ServerActionData):
+    action = data.action
     print(action)
-    if action == "start":
-        success, message = server_manager.start_server(server_id)
-    elif action == "stop":
-        success, message = server_manager.stop_server(server_id)
+
+    def check_action_data(_action: str, _data: dict) -> Tuple[bool, str]:
+        action_with_data = {
+            "ban": ["player"],
+            "kick": ["player"],
+            "op": ["player"]
+        }
+        if _action not in action_with_data:
+            return True, ""
+        if _data is not None:
+            for key in action_with_data[_action]:
+                if key not in _data:
+                    return False, "Incorrect action_data to run this command"
+            return True, ""
+
+    action_data = data.action_data
+    correct, message = check_action_data(action, action_data)
+    if correct:
+        if action == "start":
+            success, message = server_manager.start_server(server_id)
+        elif action == "stop":
+            success, message = server_manager.stop_server(server_id)
+        elif action in ["ban", "kick", "op"]:
+            success, message = server_manager.player_command(server_id, action_data["player"], action)
     return {
         "success": success,
         "message": message
