@@ -1,3 +1,4 @@
+import os
 import subprocess
 from datetime import datetime
 from dataclasses import dataclass
@@ -57,6 +58,7 @@ class MinecraftServer:
     def install(self):
         if not self.server_manager_data.installed:
             if self.server_manager_data.version in self.server_versions.available_versions:
+                os.makedirs(self.path_data.base_path, exist_ok=True)
                 headers = {
                     "User-Agent": "Mozilla/5.0 (X11; Linux i686; rv:96.0) Gecko/20100101 Firefox/96.0"
                 }
@@ -106,6 +108,8 @@ class MinecraftServer:
                 return "stopping"
             else:
                 return "running"
+        elif not self.server_manager_data.installed:
+            return "installing"
         else:
             return "stopped"
 
