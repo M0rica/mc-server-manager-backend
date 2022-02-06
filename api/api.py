@@ -20,8 +20,9 @@ class AvailableVersionsResponse(BaseModel):
 
     class Config:
         schema_extra = {
-            "example":
-                ["1.18.1, 1.18, 1.17.1", "1.16.2-pre3"]
+            "example": {
+                "versions": ["1.18.1, 1.18, 1.17.1", "1.16.2-pre3"]
+            }
         }
 
 
@@ -112,6 +113,7 @@ class AllServerStatusResponse(BaseModel):
 
 
 class ServerActionData(BaseModel):
+    """Test"""
     action: str = Field(..., title="The action the server should perform",
                         description="One of []")
     action_data: Union[dict, None] = Field(None, title="Additional data depending on the action",
