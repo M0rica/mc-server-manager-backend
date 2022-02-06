@@ -1,5 +1,8 @@
-uvicorn~=0.17.0.post1
-fastapi~=0.68.1
-pydantic~=1.8.2
-requests~=2.26.0
-starlette~=0.14.2
+uvicorn
+fastapi
+pydantic
+requests
+starlette
+beautifulsoup4
+mcstatus
+fastapi_utils

@@ -1,14 +1,12 @@
 import os
 import subprocess
-import sys
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
 import requests
-
-from api import utils
 from mcstatus import MinecraftServer as MCServer
 
+from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
 from api.utils import create_eula
 
@@ -30,17 +28,20 @@ class MinecraftServerPathData:
     absolut_jar_path: str
     server_properties_file: str
 
+
 @dataclass
 class MCServerManagerData:
     installed: bool
     version: str
     created_at: datetime
 
+
 @dataclass
 class MinecraftData:
     seed: str
     gamemode: str
     leveltype: str
+
 
 class MinecraftServer:
 
@@ -115,8 +116,9 @@ class MinecraftServer:
             self._server_proc = subprocess.Popen(
                 ["java", f"-Xmx{self.hardware_config.ram}M", f"-Xms{self.hardware_config.ram}M", "-jar",
                  self.path_data.jar_path, "--nogui"], cwd=self.path_data.base_path,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, universal_newlines=True
+            )
             print("Starting")
             self.starting = True
             return True
@@ -127,7 +129,7 @@ class MinecraftServer:
         if self._server_proc is not None and self._server_proc.poll() is None:
             if not self.stopping:
                 self._server_proc.stdin.write("stop\n")
-                #self._server_proc.stdin.close()
+                # self._server_proc.stdin.close()
                 self._server_proc.stdin.flush()
                 return True
             else:
@@ -148,6 +150,7 @@ class MinecraftServer:
         """
         if self.get_status() == "running":
             self._server_proc.stdin.write(f"{command} {player}\n")
+            self._server_proc.stdin.flush()
             return True
         else:
             return False
