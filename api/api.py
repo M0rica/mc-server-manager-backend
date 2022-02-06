@@ -63,8 +63,8 @@ class ServerCreationData(BaseModel):
         schema_extra = {
             "example": {
                 "name": "My Minecraft Server",
-                "type": "spigot",
-                "version": "1.18.0",
+                "type": "minecraft",
+                "version": "1.18.1",
                 "seed": "MySeed",
                 "gamemode": "survival",
                 "leveltype": "default"
