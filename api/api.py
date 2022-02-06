@@ -178,6 +178,9 @@ def server_action(server_id: int, data: ServerActionData):
     def check_action_data(_action: str, _data: dict) -> Tuple[bool, str]:
         action_with_data = {
             "ban": ["player"],
+            "ban-ip": ["ip"],
+            "pardon": ["player"],
+            "pardon-ip": ["ip"],
             "kick": ["player"],
             "op": ["player"]
         }
@@ -196,8 +199,10 @@ def server_action(server_id: int, data: ServerActionData):
             success, message = server_manager.start_server(server_id)
         elif action == "stop":
             success, message = server_manager.stop_server(server_id)
-        elif action in ["ban", "kick", "op"]:
+        elif action in ["ban", "pardon", "kick", "op"]:
             success, message = server_manager.player_command(server_id, action_data["player"], action)
+        elif action in ["ban-ip", "pardon-ip"]:
+            success, message = server_manager.player_command(server_id, action_data["ip"], action)  # workaround for now
     return {
         "success": success,
         "message": message
