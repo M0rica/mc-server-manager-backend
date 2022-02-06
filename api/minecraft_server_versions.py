@@ -23,8 +23,10 @@ class AvailableMinecraftServerVersions:
                                  {"class": "item flex items-center p-3 border-b border-gray-700 snap-start ncItem"})
         for version in releases:
             version_link = version.find("a", text="Download").get("href")
-            if not version_link.startswith("/b") and not version_link.startswith("/a") \
-                    and not version_link.startswith("1.1") and not version_link.startswith("1.0"):
+            if not version_link.startswith("/download/b") and not version_link.startswith("/download/a") \
+                    and not version_link.startswith("/download/1.1") and not version_link.startswith("/download/1.0") \
+                    and not version_link.startswith("/download/c") and not version_link.startswith("/download/rd") \
+                    and not version_link.startswith("/download/inf"):
                 self.available_versions[version.get("id")] = "https://mcversions.net" \
                                                              + version.find("a", text="Download").get("href")
 
