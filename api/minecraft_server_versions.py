@@ -24,7 +24,7 @@ class AvailableMinecraftServerVersions:
         for version in releases:
             version_link = version.find("a", text="Download").get("href")
             if not version_link.startswith("/download/b") and not version_link.startswith("/download/a") \
-                    and not version_link.startswith("/download/1.1") and not version_link.startswith("/download/1.0") \
+                    and version_link != "/download/1.1" and not version_link.startswith("/download/1.0") \
                     and not version_link.startswith("/download/c") and not version_link.startswith("/download/rd") \
                     and not version_link.startswith("/download/inf"):
                 self.available_versions[version.get("id")] = "https://mcversions.net" \
