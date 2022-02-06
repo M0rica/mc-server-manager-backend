@@ -124,9 +124,9 @@ class MinecraftServer:
         return {
             "id": self.id,
             "name": self.name,
+            "status": self.get_status(),
             "network_config": self.network_config.__dict__,
             "hardware_config": self.hardware_config.__dict__,
-            "status": self.get_status(),
             "path": self.path_data.__dict__,
             "server_manager_data": self.server_manager_data.__dict__,
             "server_properties": self.server_properties,

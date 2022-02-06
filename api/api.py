@@ -110,6 +110,30 @@ class AllServerStatusResponse(BaseModel):
     data: dict = Field(..., title="Dict with complete server data of each server",
                        description="A dict with complete server data of every server with server ids as keys")
 
+
+class ServerActionData(BaseModel):
+    action: str = Field(..., title="The action the server should perform",
+                        description="One of []")
+    action_data: Union[dict, None] = Field(None, title="Additional data depending on the action",
+                        description="start: start the server"
+                                    "\n\nstop: stop the server")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "action": "ban",
+                "action_data": {
+                    "player": "Dummerle123"
+                }
+            }
+        }
+
+
+class ServerActionResponse(BaseModel):
+    success: bool = Field(..., title="Whether or not the action was performed successfully")
+    message: str = Field(..., title="Message with information")
+
+
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {
         "description": "A new server was successfully created",
@@ -141,4 +165,14 @@ def get_server_status(server_id: int):
     """
     return {
         "data": server_manager.get_server_data(server_id)
+    }
+
+
+@server_router.post("/{server_id}/action", response_model=ServerActionResponse)
+def server_action(server_id: int, action_data: ServerActionData):
+    action = action_data.action
+    print(action)
+    return {
+        "success": True,
+        "message": "Message"
     }

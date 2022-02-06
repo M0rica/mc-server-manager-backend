@@ -105,5 +105,5 @@ class ServerManager:
     def get_all_server_data(self):
         data = {}
         for id in self._servers.keys():
-            data[str(id)] = self.get_server_data(id)
+            data[id] = self.get_server_data(id)
         return data
