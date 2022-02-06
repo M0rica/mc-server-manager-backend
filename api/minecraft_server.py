@@ -1,8 +1,6 @@
-import os
 import subprocess
 from datetime import datetime
 from dataclasses import dataclass
-from threading import Thread
 
 import requests
 
@@ -112,22 +110,25 @@ class MinecraftServer:
             return "stopped"
 
     def get_server_stats(self):
-        server = MCServer("localhost", self.port)
-        status = server.status()
-        return {
-            "ping": status.latency,
-            "players": status.players.online
-        }
+        if self.get_status() == "running":
+            server = MCServer("localhost", self.network_config.port)
+            status = server.status()
+            return {
+                "ping": status.latency,
+                "players": status.players.online
+            }
+        else:
+            return {}
 
     def __dict__(self):
         return {
             "id": self.id,
             "name": self.name,
-            "network_config": dict(self.network_config),
-            "hardware_config": dict(self.hardware_config),
+            "network_config": self.network_config.__dict__,
+            "hardware_config": self.hardware_config.__dict__,
             "status": self.get_status(),
-            "path": dict(self.path_data),
-            "server_manager_data": dict(self.server_manager_data),
+            "path": self.path_data.__dict__,
+            "server_manager_data": self.server_manager_data.__dict__,
             "server_properties": self.server_properties,
             "online_stats": self.get_server_stats()
         }

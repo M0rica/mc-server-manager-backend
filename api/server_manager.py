@@ -100,4 +100,10 @@ class ServerManager:
     def get_server_data(self, server_id: int) -> dict:
         server = self._get_server(server_id)
         if server is not None:
-            return server.compile_data()
+            return server.__dict__()
+
+    def get_all_server_data(self):
+        data = {}
+        for id in self._servers.keys():
+            data[str(id)] = self.get_server_data(id)
+        return data

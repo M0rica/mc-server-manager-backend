@@ -94,22 +94,8 @@ class ServerCreationResponse(BaseModel):
         }
 
 
-class ServerIDsResponse(BaseModel):
-    ids: list = Field(..., title="List of all server IDs",
-                      description="Returns a list with all server IDs")
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "ids": [
-                    1001, 3425, 1234
-                ]
-            }
-        }
-
-
 class ServerStatusResponse(BaseModel):
-    status: str = Field(..., title="Complete server data",
+    data: dict = Field(..., title="Complete server data",
                         description="Returns a dict with all of this server's data")
 
     class Config:
@@ -119,6 +105,10 @@ class ServerStatusResponse(BaseModel):
             }
         }
 
+
+class AllServerStatusResponse(BaseModel):
+    data: dict = Field(..., title="Dict with complete server data of each server",
+                       description="A dict with complete server data of every server with server ids as keys")
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {
@@ -137,10 +127,10 @@ def create_server(request: ServerCreationData):
     }
 
 
-@server_router.get("/", response_model=ServerIDsResponse)
-def get_server_ids():
+@server_router.get("/", response_model=AllServerStatusResponse)
+def get_server_data():
     return {
-        "ids": server_manager.get_server_ids()
+        "data": server_manager.get_all_server_data()
     }
 
 
@@ -149,4 +139,6 @@ def get_server_status(server_id: int):
     """
     Get the status of the server with the given ID
     """
-    return server_manager.get_server_data(server_id)
+    return {
+        "data": server_manager.get_server_data(server_id)
+    }
