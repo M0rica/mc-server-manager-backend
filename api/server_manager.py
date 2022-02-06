@@ -41,7 +41,7 @@ class ServerManager:
                 data = json.load(f)
 
     def save_servers(self):
-        server_data = [{id, dict(server)} for id, server in self._servers]
+        server_data = self.get_all_server_data()
         save = {
             "servers": server_data
         }
@@ -66,8 +66,8 @@ class ServerManager:
         thrd.start()
         return id
 
-    def _create_server(self, id: int, data: dict):
-        server_path = os.path.join(self.servers_path, str(id))
+    def _create_server(self, server_id: int, data: dict):
+        server_path = os.path.join(self.servers_path, str(server_id))
         if os.path.exists(server_path):
             shutil.rmtree(server_path)
         os.makedirs(server_path)
@@ -82,11 +82,16 @@ class ServerManager:
         network_config = MinecraftServerNetworkConfig(port=port)
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
-        server = MinecraftServer(id, data["name"], path_data, network_config, hardware_config, server_manager_data,
+        server = MinecraftServer(server_id, data["name"], path_data, network_config, hardware_config, server_manager_data,
                                  self.available_versions)
-        self._servers[id] = server
+        self._servers[server_id] = server
         server.install()
-        return id
+        return server_id
+
+    def delete_server(self, server_id: int):
+        server = self._get_server(server_id)
+        shutil.rmtree(server.path_data.base_path)
+        del self._servers[server_id]
 
     def get_server_ids(self):
         return list(self._servers.keys())
