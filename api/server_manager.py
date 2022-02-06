@@ -7,14 +7,15 @@ from datetime import datetime
 from threading import Thread
 
 from api import utils
+from api.minecraft_server_versions import AvailableMinecraftServerVersions
 from config import get_config
 from api.minecraft_server import MinecraftServer, MinecraftServerPathData, MinecraftServerNetworkConfig, \
     MinecraftServerHardwareConfig, MCServerManagerData
 
 
 class ServerManager:
-    def __init__(self):
-
+    def __init__(self, server_versions: AvailableMinecraftServerVersions):
+        self.available_versions = server_versions
         self.base_path: str
         self.servers_path: str
         self.build_path: str # directory buildtools is in and where new versions will be build
@@ -22,7 +23,6 @@ class ServerManager:
         self.install_proc: subprocess.Popen = None
         self.install_logs = ""
 
-        self.available_versions = {}
         self._servers = {}
 
         self.load_config()
@@ -81,7 +81,8 @@ class ServerManager:
         network_config = MinecraftServerNetworkConfig(port=port)
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
-        server = MinecraftServer(id, data["name"], path_data, network_config, hardware_config, server_manager_data)
+        server = MinecraftServer(id, data["name"], path_data, network_config, hardware_config, server_manager_data,
+                                 self.available_versions)
         self._servers[id] = server
         server.install()
         return id

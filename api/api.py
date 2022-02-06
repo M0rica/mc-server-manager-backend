@@ -11,7 +11,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-erver_versions = AvailableMinecraftServerVersions()
+server_versions = AvailableMinecraftServerVersions()
 
 
 class AvailableVersionsResponse(BaseModel):
@@ -40,7 +40,7 @@ server_router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-server_manager = ServerManager()
+server_manager = ServerManager(server_versions)
 
 
 class ServerCreationData(BaseModel):
