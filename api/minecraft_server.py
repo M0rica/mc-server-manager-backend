@@ -103,10 +103,9 @@ class MinecraftServer:
             self.starting = False
             self._server_proc = None
         elif status != "installing" and self._server_proc is not None:
-            for i in range(3):
-                line = self._server_proc.stdout.readline()
-                print(line)
-                self._logs += line
+            line = self._server_proc.stdout.readline()
+            print(line)
+            self._logs += line
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
 
@@ -149,6 +148,8 @@ class MinecraftServer:
         :return:
         """
         if self.get_status() == "running":
+            print("test")
+            print(self._server_proc.stdin.writable())
             self._server_proc.stdin.write(f"{command} {player}\n")
             self._server_proc.stdin.flush()
             return True
