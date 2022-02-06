@@ -62,7 +62,7 @@ class MinecraftServer:
                 headers = {
                     "User-Agent": "Mozilla/5.0 (X11; Linux i686; rv:96.0) Gecko/20100101 Firefox/96.0"
                 }
-                data = requests.get(self.server_versions.available_versions[self.server_manager_data.version],
+                data = requests.get(self.server_versions.get_download_link(self.server_manager_data.version),
                                     headers=headers).content
                 with open(self.path_data.jar_path, "wb") as f:
                     f.write(data)

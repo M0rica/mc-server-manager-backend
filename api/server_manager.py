@@ -59,8 +59,9 @@ class ServerManager:
 
     def create_server(self, data: dict) -> int:
         id = 0
-        while id != 0 and id not in self._servers:
+        while id == 0 or id in self._servers:
             id = random.randint(1000, 9999)
+        print(id)
         thrd = Thread(target=self._create_server, args=[id, data])
         thrd.start()
         return id
