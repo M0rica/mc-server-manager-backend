@@ -1,7 +1,5 @@
 import os
 import subprocess
-import sys
-import time
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -10,6 +8,7 @@ from mcstatus import MinecraftServer as MCServer
 
 from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
+from api.process_handler import ProcessHandler
 from api.utils import create_eula
 
 
@@ -46,11 +45,12 @@ class MinecraftData:
 
 class MinecraftServer:
 
-    def __init__(self, id: int, name: str, path_data: MinecraftServerPathData,
+    def __init__(self, id: int, name: str, process_handler: ProcessHandler, path_data: MinecraftServerPathData,
                  network_config: MinecraftServerNetworkConfig, hardware_config: MinecraftServerHardwareConfig,
                  server_manager_data: MCServerManagerData, server_versions: AvailableMinecraftServerVersions):
         self.id = id
         self.name = name
+        self.process_handler = process_handler
         self.network_config: MinecraftServerNetworkConfig = network_config
         self.hardware_config = hardware_config
         self.path_data = path_data
@@ -58,6 +58,7 @@ class MinecraftServer:
         self.server_versions = server_versions
 
         self.server_properties = {}
+        self.pid = 0
 
         self.starting = False
         self.stopping = False
@@ -95,31 +96,22 @@ class MinecraftServer:
         utils.save_properties(self.path_data.server_properties_file, self.server_properties)
 
     def update(self):
+        self.pid = 0 if not self.process_handler.process_exists(self.pid) else self.pid
         status = self.get_status()
         if status == "stopped":
             if self.stopping:
                 self.stopping = False
                 self.save_properties()
             self.starting = False
-            self._server_proc = None
-        elif status != "installing" and self._server_proc is not None:
-            for i in range(5):
-                time.sleep(0.001)
-                line = self._server_proc.stdout.readline()
-                print(line)
-                self._logs += line
         if self.starting:
-            self.starting = "For help, type \"help\"" not in self._logs
+            self.starting = "For help, type \"help\"" not in self.process_handler.get_process(self.pid).logs
 
     def start(self) -> bool:
-        if self.server_manager_data.installed and self._server_proc is None or self._server_proc.poll() is not None:
+        if self.server_manager_data.installed and self.pid == 0:
             print(self.path_data.jar_path)
-            self._server_proc = subprocess.Popen(
+            self.pid = self.process_handler.start_process(
                 ["java", f"-Xmx{self.hardware_config.ram}M", f"-Xms{self.hardware_config.ram}M", "-jar",
-                 self.path_data.jar_path, "--nogui"], cwd=self.path_data.base_path,
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=sys.stdout, universal_newlines=True
-            )
+                 self.path_data.jar_path, "--nogui"], cwd=self.path_data.base_path)
             print("Starting")
             self.starting = True
             return True
@@ -127,11 +119,10 @@ class MinecraftServer:
             return False
 
     def stop(self) -> bool:
-        if self._server_proc is not None and self._server_proc.poll() is None:
+        if self.pid != 0:
             if not self.stopping:
-                self._server_proc.stdin.write("stop\n")
-                # self._server_proc.stdin.close()
-                self._server_proc.stdin.flush()
+                self.process_handler.send_input(self.pid, "stop\n")
+                self.stopping = True
                 return True
             else:
                 return False
@@ -150,14 +141,13 @@ class MinecraftServer:
         :return:
         """
         if self.get_status() == "running":
-            self._server_proc.stdin.write(f"{command} {player}\n")
-            self._server_proc.stdin.flush()
+            self.process_handler.send_input(self.pid, f"{command} {player}\n")
             return True
         else:
             return False
 
     def get_status(self) -> str:
-        if self._server_proc is not None and self._server_proc.poll() is None:
+        if self.pid != 0:
             if self.starting:
                 return "starting"
             elif self.stopping:

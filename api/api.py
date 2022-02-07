@@ -136,7 +136,9 @@ class ServerActionResponse(BaseModel):
 @server_router.websocket("{server_id}/datastream")
 async def websocket_data_stream(server_id: int, websocket: WebSocket):
     await websocket.accept()
-    server_manager.get
+    server_pid = server_manager.get_server(server_id).pid
+    if server_pid != 0:
+        server_manager.process_handler.get_process(server_pid).add_websocket(websocket)
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {

@@ -20,10 +20,9 @@ class ServerManager:
         self.available_versions = server_versions
         self.base_path: str
         self.servers_path: str
-        self.build_path: str # directory buildtools is in and where new versions will be build
-        self.build_tools_path: str
-        self.install_proc: subprocess.Popen = None
-        self.install_logs = ""
+        #self.build_path: str # directory buildtools is in and where new versions will be build
+        #self.build_tools_path: str
+        #self.install_logs = ""
 
         self.process_handler = ProcessHandler()
         self.process_handler.start()
@@ -32,9 +31,6 @@ class ServerManager:
 
         self.load_config()
         self.load_servers()
-
-    def get_process_handler(self):
-        return self.process_handler
 
     def load_config(self):
         config = get_config()["servers"]
@@ -56,7 +52,7 @@ class ServerManager:
                 path_data = MinecraftServerPathData(**server_data["path_data"])
                 server_manager_data = MCServerManagerData(**server_data["server_manager_data"])
                 server_id = server_data["id"]
-                server = MinecraftServer(server_id, server_data["name"], path_data, network_config,
+                server = MinecraftServer(server_id, server_data["name"], self.process_handler, path_data, network_config,
                                          hardware_config, server_manager_data, self.available_versions)
                 server.load_properties()
                 self._servers[server_id] = server
@@ -72,8 +68,10 @@ class ServerManager:
     def server_exists(self, server_id: int) -> bool:
         return server_id in self._servers
 
-    def _get_server(self, server_id: int) -> MinecraftServer:
+    def get_server(self, server_id: int) -> MinecraftServer:
         server = self._servers.get(server_id)
+        if server is not None:
+            server.update()
         return server
 
     def create_server(self, data: dict) -> int:
@@ -103,14 +101,14 @@ class ServerManager:
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
         minecraft_data = MinecraftData(seed=data["seed"], leveltype=data["leveltype"])
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
-        server = MinecraftServer(server_id, data["server_name"], path_data, network_config, hardware_config,
+        server = MinecraftServer(server_id, data["server_name"], self.process_handler, path_data, network_config, hardware_config,
                                  server_manager_data, self.available_versions)
         self._servers[server_id] = server
         server.install(minecraft_data)
         self.save_servers()
 
     def delete_server(self, server_id: int):
-        server = self._get_server(server_id)
+        server = self.get_server(server_id)
         shutil.rmtree(server.path_data.base_path)
         del self._servers[server_id]
 
@@ -119,7 +117,7 @@ class ServerManager:
             server.update()
 
     def start_server(self, server_id: int) -> Tuple[bool, str]:
-        server = self._get_server(server_id)
+        server = self.get_server(server_id)
         if server is not None:
             success = server.start()
             if success:
@@ -136,7 +134,7 @@ class ServerManager:
         return success, message
 
     def stop_server(self, server_id: int) -> Tuple[bool, str]:
-        server = self._get_server(server_id)
+        server = self.get_server(server_id)
         if server is not None:
             success = server.stop()
             if success:
@@ -153,7 +151,7 @@ class ServerManager:
         return success, message
 
     def player_command(self, server_id: int, player: str, command: str) -> Tuple[bool, str]:
-        server = self._get_server(server_id)
+        server = self.get_server(server_id)
         if server is not None:
             success = server.player_command(player, command)
             if success:
@@ -174,12 +172,12 @@ class ServerManager:
 
     def get_server_status(self, server_id: int) -> dict:
         status = {
-            "status": self._get_server(server_id).get_status()
+            "status": self.get_server(server_id).get_status()
         }
         return status
 
     def get_server_data(self, server_id: int) -> dict:
-        server = self._get_server(server_id)
+        server = self.get_server(server_id)
         if server is not None:
             return server.__dict__()
 

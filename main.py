@@ -28,12 +28,6 @@ app.include_router(api.server_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-@app.on_event("startup")
-@repeat_every(seconds=0.15)
-def update_servers():
-    api.server_manager.update_servers()
-
-
 @app.get("/")
 async def root():
     return FileResponse(
