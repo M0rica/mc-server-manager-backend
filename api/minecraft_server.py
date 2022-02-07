@@ -1,5 +1,7 @@
 import os
 import subprocess
+import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -39,7 +41,6 @@ class MCServerManagerData:
 @dataclass
 class MinecraftData:
     seed: str
-    gamemode: str
     leveltype: str
 
 
@@ -84,7 +85,6 @@ class MinecraftServer:
                     "level-name": "world/world",
                     "level-seed": install_data.seed,
                     "level-type": install_data.leveltype,
-                    "gamemode": install_data.gamemode
                 }
                 self.save_properties()
 
@@ -103,9 +103,11 @@ class MinecraftServer:
             self.starting = False
             self._server_proc = None
         elif status != "installing" and self._server_proc is not None:
-            line = self._server_proc.stdout.readline()
-            print(line)
-            self._logs += line
+            for i in range(5):
+                time.sleep(0.001)
+                line = self._server_proc.stdout.readline()
+                print(line)
+                self._logs += line
         if self.starting:
             self.starting = "For help, type \"help\"" not in self._logs
 
@@ -116,7 +118,7 @@ class MinecraftServer:
                 ["java", f"-Xmx{self.hardware_config.ram}M", f"-Xms{self.hardware_config.ram}M", "-jar",
                  self.path_data.jar_path, "--nogui"], cwd=self.path_data.base_path,
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, universal_newlines=True
+                stderr=sys.stdout, universal_newlines=True
             )
             print("Starting")
             self.starting = True

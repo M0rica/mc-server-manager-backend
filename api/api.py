@@ -1,6 +1,6 @@
 from typing import Union, Tuple
 
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket
 from pydantic import BaseModel, Field
 
 from api.server_manager import ServerManager
@@ -55,8 +55,6 @@ class ServerCreationData(BaseModel):
                          description="The Minecraft version of this server."
                                      "\n\nFormat: 1.x.x")
     seed: Union[str, None] = Field(None, title="Seed for the world generator")
-    gamemode: str = Field(..., title="Gamemode for the server",
-                          description="One of [adventure, creative, survival, spectator]")
     leveltype: str = Field(..., title="Leveltype for the world",
                            description="One of [default, flat, largebiomes, amplified]")
 
@@ -67,7 +65,6 @@ class ServerCreationData(BaseModel):
                 "type": "minecraft",
                 "version": "1.18.1",
                 "seed": "MySeed",
-                "gamemode": "survival",
                 "leveltype": "default"
             }
         }
@@ -135,6 +132,11 @@ class ServerActionResponse(BaseModel):
     success: bool = Field(..., title="Whether or not the action was performed successfully")
     message: str = Field(..., title="Message with information")
 
+
+@server_router.websocket("{server_id}/datastream")
+async def websocket_data_stream(server_id: int, websocket: WebSocket):
+    await websocket.accept()
+    server_manager.get
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {

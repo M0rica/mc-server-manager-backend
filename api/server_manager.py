@@ -9,6 +9,7 @@ from typing import Tuple
 
 from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
+from api.process_handler import ProcessHandler
 from config import get_config
 from api.minecraft_server import MinecraftServer, MinecraftServerPathData, MinecraftServerNetworkConfig, \
     MinecraftServerHardwareConfig, MCServerManagerData, MinecraftData
@@ -24,11 +25,16 @@ class ServerManager:
         self.install_proc: subprocess.Popen = None
         self.install_logs = ""
 
+        self.process_handler = ProcessHandler()
+        self.process_handler.start()
         self._servers = {}
 
 
         self.load_config()
         self.load_servers()
+
+    def get_process_handler(self):
+        return self.process_handler
 
     def load_config(self):
         config = get_config()["servers"]
@@ -95,7 +101,7 @@ class ServerManager:
         port = utils.get_free_port()
         network_config = MinecraftServerNetworkConfig(port=port)
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
-        minecraft_data = MinecraftData(seed=data["seed"], gamemode=data["gamemode"], leveltype=data["leveltype"])
+        minecraft_data = MinecraftData(seed=data["seed"], leveltype=data["leveltype"])
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
         server = MinecraftServer(server_id, data["server_name"], path_data, network_config, hardware_config,
                                  server_manager_data, self.available_versions)
