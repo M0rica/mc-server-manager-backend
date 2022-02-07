@@ -70,6 +70,7 @@ class ServerManager:
 
     def get_server(self, server_id: int) -> MinecraftServer:
         server = self._servers.get(server_id)
+        print(server == None)
         if server is not None:
             server.update()
         return server

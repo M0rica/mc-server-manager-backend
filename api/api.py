@@ -144,7 +144,10 @@ async def websocket_data_stream(websocket: WebSocket, server_id: int):
         await websocket.send_json({"stdout": stream.logs})
         while True:
             await asyncio.sleep(0.1)
-            await websocket.send_json(await stream.get_data())
+            try:
+                await websocket.send_json(await stream.get_data())
+            except:
+                break
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {

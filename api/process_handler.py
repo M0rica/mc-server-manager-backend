@@ -29,12 +29,10 @@ class ServerProcess(psutil.Popen):
         self.data_stream = ProcessDataStream()
         self.stdout_since_last_send = ""
         self.logs = ""
+        self.data = {}
 
     def add_websocket(self, websocket: WebSocket):
         self.data_stream.add_websocket(websocket)
-
-    def get_stream(self):
-        return self.data_stream
 
     def read_output(self):
         output = self.stdout.readline()
@@ -102,15 +100,16 @@ class ProcessHandler(Thread):
             process.stdin.flush()
 
     def run(self) -> None:
-        i = 0
         time.sleep(5)
+        start_time = time.time()
         while not self.stop:
-            time.sleep(0.001)
+            time.sleep(0.2)
             for pid in list(self.processes.keys()):
                 if psutil.pid_exists(pid):
                     process = self.processes[pid]
-                    if i % 100 == 0:
+                    if time.time() - start_time > 5:
                         process.update_resource_usage()
+                        start_time = time.time()
                         #process.send_data()
                     process.read_output()
                     #asyncio.run_coroutine_threadsafe(process.send_data, asyncio.get_running_loop())
