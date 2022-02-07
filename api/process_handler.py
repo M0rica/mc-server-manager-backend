@@ -8,25 +8,10 @@ import psutil
 from fastapi import WebSocket
 
 
-class ProcessDataStream:
-    websockets = []
-
-    def add_websocket(self, websocket: WebSocket):
-        self.websockets.append(websocket)
-
-    async def send_data(self, data: dict) -> None:
-        for websocket in self.websockets:
-            try:
-                await websocket.send_json(data)
-            except:
-                self.websockets.remove(websocket)
-
-
 class ServerProcess(psutil.Popen):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.data_stream = ProcessDataStream()
         self.stdout_since_last_send = ""
         self.logs = ""
         self.data = {}
