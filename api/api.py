@@ -45,7 +45,7 @@ server_manager = ServerManager(server_versions)
 
 
 class ServerCreationData(BaseModel):
-    name: str = Field(..., title="Display name of the server")
+    server_name: str = Field(..., title="Display name of the server")
     type: str = Field(..., title="Server type to install",
                       description="The type of server that should be installed."
                                   "\n\nVanilla Server: minecraft"
@@ -63,7 +63,7 @@ class ServerCreationData(BaseModel):
     class Config:
         schema_extra = {
             "example": {
-                "name": "My Minecraft Server",
+                "server_name": "My Minecraft Server",
                 "type": "minecraft",
                 "version": "1.18.1",
                 "seed": "MySeed",

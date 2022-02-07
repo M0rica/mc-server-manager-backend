@@ -26,6 +26,7 @@ class ServerManager:
 
         self._servers = {}
 
+
         self.load_config()
         self.load_servers()
 
@@ -96,7 +97,7 @@ class ServerManager:
         hardware_config = MinecraftServerHardwareConfig(ram=1024)
         minecraft_data = MinecraftData(seed=data["seed"], gamemode=data["gamemode"], leveltype=data["leveltype"])
         server_manager_data = MCServerManagerData(installed=False, version=data["version"], created_at=datetime.now())
-        server = MinecraftServer(server_id, data["name"], path_data, network_config, hardware_config,
+        server = MinecraftServer(server_id, data["server_name"], path_data, network_config, hardware_config,
                                  server_manager_data, self.available_versions)
         self._servers[server_id] = server
         server.install(minecraft_data)
