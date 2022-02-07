@@ -133,8 +133,9 @@ class ServerActionResponse(BaseModel):
     message: str = Field(..., title="Message with information")
 
 
-@server_router.websocket("{server_id}/datastream")
-async def websocket_data_stream(server_id: int, websocket: WebSocket):
+@server_router.websocket("/api/servers/{server_id}/datastream")
+async def websocket_data_stream(websocket: WebSocket, server_id: int):
+    print("test")
     await websocket.accept()
     server_pid = server_manager.get_server(server_id).pid
     if server_pid != 0:
