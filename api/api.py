@@ -138,16 +138,18 @@ class ServerActionResponse(BaseModel):
 async def websocket_data_stream(websocket: WebSocket, server_id: int):
     print("test")
     await websocket.accept()
-    server_pid = server_manager.get_server(server_id).pid
-    if server_pid != 0:
-        stream = server_manager.process_handler.get_process(server_pid)
-        await websocket.send_json({"stdout": stream.logs})
-        while True:
-            await asyncio.sleep(0.1)
-            try:
-                await websocket.send_json(await stream.get_data())
-            except:
-                break
+    server = server_manager.get_server(server_id)
+    if server is not None:
+        server_pid = server.pid
+        if server_pid != 0:
+            stream = server_manager.process_handler.get_process(server_pid)
+            await websocket.send_json({"stdout": stream.logs})
+            while True:
+                await asyncio.sleep(0.1)
+                try:
+                    await websocket.send_json(await stream.get_data())
+                except:
+                    break
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {
