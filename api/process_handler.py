@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 import time
 from threading import Thread
@@ -13,10 +14,10 @@ class ProcessDataStream:
     def add_websocket(self, websocket: WebSocket):
         self.websockets.append(websocket)
 
-    def send_data(self, data: dict) -> None:
+    async def send_data(self, data: dict) -> None:
         for websocket in self.websockets:
             try:
-                websocket.send_json(data)
+                await websocket.send_json(data)
             except:
                 self.websockets.remove(websocket)
 
@@ -31,6 +32,9 @@ class ServerProcess(psutil.Popen):
 
     def add_websocket(self, websocket: WebSocket):
         self.data_stream.add_websocket(websocket)
+
+    def get_stream(self):
+        return self.data_stream
 
     def read_output(self):
         output = self.stdout.readline()
@@ -52,6 +56,11 @@ class ServerProcess(psutil.Popen):
                 "server": memory_server.uss
             }
         }
+
+    async def get_data(self):
+        self.data["stdout"] = self.stdout_since_last_send
+        self.stdout_since_last_send = ""
+        return self.data
 
     def send_data(self):
         self.data["stdout"] = self.stdout_since_last_send
@@ -94,6 +103,7 @@ class ProcessHandler(Thread):
 
     def run(self) -> None:
         i = 0
+        time.sleep(5)
         while not self.stop:
             time.sleep(0.001)
             for pid in list(self.processes.keys()):
@@ -101,9 +111,10 @@ class ProcessHandler(Thread):
                     process = self.processes[pid]
                     if i % 100 == 0:
                         process.update_resource_usage()
-                        process.send_data()
+                        #process.send_data()
                     process.read_output()
-                    process.send_data()
+                    #asyncio.run_coroutine_threadsafe(process.send_data, asyncio.get_running_loop())
+                    #process.send_data()
 
                 else:
                     del self.processes[pid]

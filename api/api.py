@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union, Tuple
 
 from fastapi import APIRouter, WebSocket
@@ -139,7 +140,10 @@ async def websocket_data_stream(websocket: WebSocket, server_id: int):
     await websocket.accept()
     server_pid = server_manager.get_server(server_id).pid
     if server_pid != 0:
-        server_manager.process_handler.get_process(server_pid).add_websocket(websocket)
+        stream = server_manager.process_handler.get_process(server_pid)
+        while True:
+            await asyncio.sleep(0.1)
+            await websocket.send_json(await stream.get_data())
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {
