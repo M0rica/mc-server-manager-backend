@@ -41,7 +41,8 @@ class ServerProcess(psutil.Popen):
                 "total": memory_system.total,
                 "used": memory_system.used,
                 "server": memory_server.uss
-            }
+            },
+            "full_log": False
         }
 
     async def get_data(self):

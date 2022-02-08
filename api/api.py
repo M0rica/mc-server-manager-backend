@@ -142,7 +142,7 @@ async def websocket_data_stream(websocket: WebSocket, server_id: int):
         server_pid = server.pid
         if server_pid != 0:
             stream = server_manager.process_handler.get_process(server_pid)
-            await websocket.send_json({"stdout": stream.logs})
+            await websocket.send_json({"stdout": stream.logs, "full_log": True})
             while True:
                 await asyncio.sleep(0.25)
                 try:
