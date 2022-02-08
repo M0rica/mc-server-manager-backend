@@ -1,9 +1,10 @@
 import asyncio
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 from fastapi import APIRouter, WebSocket
 from pydantic import BaseModel, Field
 
+from api.minecraft_server import Player
 from api.server_manager import ServerManager
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
 
@@ -134,6 +135,15 @@ class ServerActionResponse(BaseModel):
     message: str = Field(..., title="Message with information")
 
 
+class ServerPlayersResponse(BaseModel):
+    online: List = Field([], title="List of all players that are online",
+                                  description="A list of all players that are currently on the server")
+    ban: List = Field([], title="List of all players that are banned",
+                              description="A list of all players that are currently banned")
+    op: List = Field([], title="List of all players that are op",
+                             description="A list of all players that are currently op")
+
+
 @server_router.websocket("/api/servers/{server_id}/datastream")
 async def websocket_data_stream(websocket: WebSocket, server_id: int):
     await websocket.accept()
@@ -207,8 +217,8 @@ def server_action(server_id: int, data: ServerActionData):
             return True, ""
 
     action_data = data.action_data
-    correct, message = check_action_data(action, action_data)
-    if correct:
+    success, message = check_action_data(action, action_data)
+    if success:
         if action == "start":
             success, message = server_manager.start_server(server_id)
         elif action == "stop":
@@ -221,3 +231,15 @@ def server_action(server_id: int, data: ServerActionData):
         "success": success,
         "message": message
     }
+
+@server_router.get("/{server_id}/players", response_model=ServerPlayersResponse)
+def get_players(server_id: int):
+    server = server_manager.get_server(server_id)
+    if server is not None:
+        return server.get_players()
+    else:
+        return {
+            "online": [],
+            "ban": [],
+            "op": []
+        }

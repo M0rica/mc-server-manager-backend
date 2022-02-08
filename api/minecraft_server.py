@@ -1,10 +1,12 @@
+import json
 import os
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional, List
 
 import requests
-from mcstatus import MinecraftServer as MCServer
+from mcstatus import MinecraftServer as MCStatusServer
 
 from api import utils
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
@@ -43,6 +45,16 @@ class MinecraftData:
     leveltype: str
 
 
+@dataclass
+class Player:
+    name: str
+    is_online: bool = False
+    is_op: Optional[bool] = False
+    is_banned: Optional[bool] = False
+    ban_reason: Optional[str] = None
+    ban_since: Optional[str] = None
+
+
 class MinecraftServer:
 
     def __init__(self, id: int, name: str, process_handler: ProcessHandler, path_data: MinecraftServerPathData,
@@ -59,11 +71,12 @@ class MinecraftServer:
 
         self.server_properties = {}
         self.pid = 0
+        self.mcstatus_server = None
+        self.players = {}
 
         self.starting = False
         self.stopping = False
 
-        self._server_proc: subprocess.Popen = None
         self._logs = ""
 
     def install(self, install_data: MinecraftData):
@@ -83,6 +96,7 @@ class MinecraftServer:
                 self.server_properties = {
                     "server-port": self.network_config.port,
                     "query.port": self.network_config.port,
+                    "enable-query": True,
                     "level-name": "world/world",
                     "level-seed": install_data.seed,
                     "level-type": install_data.leveltype,
@@ -103,8 +117,47 @@ class MinecraftServer:
                 self.stopping = False
                 self.save_properties()
             self.starting = False
+            self.mcstatus_server = None
+        elif status == "running":
+            print("creating status server")
+            self.mcstatus_server = MCStatusServer("localhost", self.network_config.port)
         if self.starting:
             self.starting = "For help, type \"help\"" not in self.process_handler.get_process(self.pid).logs
+        self._update_players()
+
+    def _update_players(self) -> None:
+        self.players = {}
+        if self.mcstatus_server is not None:
+            self.players = self._get_online_players()
+        banned_players_file = os.path.join(self.path_data.base_path, "banned-players.json")
+        op_players_file = os.path.join(self.path_data.base_path, "ops.json")
+        if os.path.isfile(banned_players_file):
+            with open(banned_players_file, "r") as f:
+                banned_players = json.load(f)
+            for player in banned_players:
+                name = player["name"]
+                if name not in self.players:
+                    self.players[name] = Player(name)
+                self.players[name].is_banned = True
+                self.players[name].ban_reason = player["reason"]
+                self.players[name].ban_since = player["created"]
+            with open(op_players_file, "r") as f:
+                banned_players = json.load(f)
+            for player in banned_players:
+                name = player["name"]
+                if name not in self.players:
+                    self.players[name] = Player(name)
+                self.players[name].is_op = True
+
+    def _get_online_players(self) -> dict:
+        players = {}
+        online_players = self.mcstatus_server.query().players.names
+        for name in online_players:
+            player = Player(name)
+            player.is_online = True
+            players[name] = player
+        return players
+
 
     def start(self) -> bool:
         if self.server_manager_data.installed and self.pid == 0:
@@ -128,10 +181,6 @@ class MinecraftServer:
                 return False
         else:
             return False
-
-    def terminate(self):
-        if self._server_proc is not None and self._server_proc.poll() is None:
-            self._server_proc.terminate()
 
     def player_command(self, player: str, command: str) -> bool:
         """
@@ -160,15 +209,29 @@ class MinecraftServer:
             return "stopped"
 
     def get_server_stats(self):
-        if self.get_status() == "running":
-            server = MCServer("localhost", self.network_config.port)
-            status = server.status()
+        if self.get_status() == "running" and self.mcstatus_server is not None:
+            status = self.mcstatus_server.status()
             return {
                 "ping": status.latency,
                 "players": status.players.online
             }
         else:
             return {}
+
+    def get_players(self) -> dict:
+        data = {
+            "online": [],
+            "ban": [],
+            "op": []
+        }
+        for player in self.players.values():
+            if player.is_online:
+                data["online"].append(player)
+            elif player.is_banned:
+                data["ban"].append(player)
+            elif player.is_op:
+                data["op"].append(player)
+        return data
 
     def __dict__(self):
         return {

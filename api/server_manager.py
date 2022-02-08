@@ -170,12 +170,6 @@ class ServerManager:
     def get_server_ids(self):
         return list(self._servers.keys())
 
-    def get_server_status(self, server_id: int) -> dict:
-        status = {
-            "status": self.get_server(server_id).get_status()
-        }
-        return status
-
     def get_server_data(self, server_id: int) -> dict:
         server = self.get_server(server_id)
         if server is not None:
