@@ -221,7 +221,7 @@ class MinecraftServer:
     def get_players(self) -> dict:
         data = {
             "online": [],
-            "ban": [],
+            "banned": [],
             "op": []
         }
         for player in self.players.values():

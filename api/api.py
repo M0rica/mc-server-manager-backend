@@ -138,7 +138,7 @@ class ServerActionResponse(BaseModel):
 class ServerPlayersResponse(BaseModel):
     online: List = Field([], title="List of all players that are online",
                                   description="A list of all players that are currently on the server")
-    ban: List = Field([], title="List of all players that are banned",
+    banned: List = Field([], title="List of all players that are banned",
                               description="A list of all players that are currently banned")
     op: List = Field([], title="List of all players that are op",
                              description="A list of all players that are currently op")
@@ -240,6 +240,6 @@ def get_players(server_id: int):
     else:
         return {
             "online": [],
-            "ban": [],
+            "banned": [],
             "op": []
         }
