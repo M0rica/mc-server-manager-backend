@@ -15,23 +15,27 @@ class ServerProcess(psutil.Popen):
         self.stdout_since_last_send = ""
         self.logs = ""
         self.data = {}
+        self.num_cpus = psutil.cpu_count()
+        self.stop = False
 
     def add_websocket(self, websocket: WebSocket):
         self.data_stream.add_websocket(websocket)
 
     def read_output(self):
-        output = self.stdout.readline()
-        if output:
-            print(output)
-            self.stdout_since_last_send += output
-            self.logs += output
+        print("start read")
+        while not self.stop:
+            output = self.stdout.readline()
+            if output:
+                print(output)
+                self.stdout_since_last_send += output
+                self.logs += output
 
     def update_resource_usage(self):
         memory_system = psutil.virtual_memory()
         memory_server = self.memory_full_info()
         self.data = {
             "cpu": {
-                "percent": self.cpu_percent()
+                "percent": round(self.cpu_percent() / self.num_cpus, 2)
             },
             "memory": {
                 "total": memory_system.total,
@@ -53,6 +57,7 @@ class ServerProcess(psutil.Popen):
 
 class ProcessHandler(Thread):
     processes = {}
+    threads = {}
 
     def __init__(self):
         super().__init__(target=self.run)
@@ -76,6 +81,10 @@ class ProcessHandler(Thread):
                                )
         pid = process.pid
         self.processes[pid] = process
+        thrd = Thread(target=process.read_output)
+        thrd.daemon = True
+        thrd.start()
+        self.threads[pid] = thrd
         return pid
 
     def send_input(self, pid: int, message: str):
@@ -85,20 +94,17 @@ class ProcessHandler(Thread):
             process.stdin.flush()
 
     def run(self) -> None:
-        time.sleep(5)
         start_time = time.time()
         while not self.stop:
-            time.sleep(0.2)
+            time.sleep(0.1)
             for pid in list(self.processes.keys()):
                 if psutil.pid_exists(pid):
                     process = self.processes[pid]
-                    if time.time() - start_time > 5:
+                    if time.time() - start_time > 3:
                         process.update_resource_usage()
                         start_time = time.time()
-                        #process.send_data()
-                    process.read_output()
-                    #asyncio.run_coroutine_threadsafe(process.send_data, asyncio.get_running_loop())
-                    #process.send_data()
 
                 else:
+                    self.threads[pid].stop = True
+                    del self.threads[pid]
                     del self.processes[pid]

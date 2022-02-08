@@ -37,6 +37,6 @@ async def root():
 
 
 if __name__ == '__main__':
-    webbrowser.open('localhost:5000')
+    #webbrowser.open('localhost:5000')
     uvicorn.run("main:app", host="0.0.0.0", workers=2, port=5000, reload=True)
 
