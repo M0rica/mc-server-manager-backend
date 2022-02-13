@@ -4,6 +4,7 @@
 /data/
 /venv/
 __pycache__
-/build
+/web/
+/build/
 /dist
 /test.py

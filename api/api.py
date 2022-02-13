@@ -4,9 +4,8 @@ from typing import Union, Tuple, List
 from fastapi import APIRouter, WebSocket
 from pydantic import BaseModel, Field
 
-from api.minecraft_server import Player
-from api.server_manager import ServerManager
 from api.minecraft_server_versions import AvailableMinecraftServerVersions
+from api.server_manager import ServerManager
 
 router = APIRouter(
     prefix="/api",
@@ -80,8 +79,8 @@ class ServerCreationResponse(BaseModel):
                          description="Will say something like 'Server created successfully!' if there was no error."
                                      "\n\nIf an error occurred, will say something like 'Server creation failed!'.")
     error: Union[str, None] = Field(None, title="The error message if something went wrong.",
-                              description="Will give the error why creating a new server failed."
-                                          "\n\nEmpty if there was no error.")
+                                    description="Will give the error why creating a new server failed."
+                                                "\n\nEmpty if there was no error.")
 
     class Config:
         schema_extra = {
@@ -96,7 +95,7 @@ class ServerCreationResponse(BaseModel):
 
 class ServerStatusResponse(BaseModel):
     data: dict = Field(..., title="Complete server data",
-                        description="Returns a dict with all of this server's data")
+                       description="Returns a dict with all of this server's data")
 
     class Config:
         schema_extra = {
@@ -116,8 +115,8 @@ class ServerActionData(BaseModel):
     action: str = Field(..., title="The action the server should perform",
                         description="One of []")
     action_data: Union[dict, None] = Field(None, title="Additional data depending on the action",
-                        description="start: start the server"
-                                    "\n\nstop: stop the server")
+                                           description="start: start the server"
+                                                       "\n\nstop: stop the server")
 
     class Config:
         schema_extra = {
@@ -137,11 +136,11 @@ class ServerActionResponse(BaseModel):
 
 class ServerPlayersResponse(BaseModel):
     online: List = Field([], title="List of all players that are online",
-                                  description="A list of all players that are currently on the server")
+                         description="A list of all players that are currently on the server")
     banned: List = Field([], title="List of all players that are banned",
-                              description="A list of all players that are currently banned")
+                         description="A list of all players that are currently banned")
     op: List = Field([], title="List of all players that are op",
-                             description="A list of all players that are currently op")
+                     description="A list of all players that are currently op")
 
 
 @server_router.websocket("/api/servers/{server_id}/datastream")
@@ -159,6 +158,7 @@ async def websocket_data_stream(websocket: WebSocket, server_id: int):
                     await websocket.send_json(await stream.get_data())
                 except:
                     break
+
 
 @server_router.post("/", response_model=ServerCreationResponse, responses={
     200: {
@@ -223,7 +223,7 @@ def server_action(server_id: int, data: ServerActionData):
             success, message = server_manager.start_server(server_id)
         elif action == "stop":
             success, message = server_manager.stop_server(server_id)
-        elif action in ["ban", "pardon", "kick", "op"]:
+        elif action in ["ban", "pardon", "kick", "op", "deop"]:
             success, message = server_manager.player_command(server_id, action_data["player"], action)
         elif action in ["ban-ip", "pardon-ip"]:
             success, message = server_manager.player_command(server_id, action_data["ip"], action)  # workaround for now
@@ -231,6 +231,7 @@ def server_action(server_id: int, data: ServerActionData):
         "success": success,
         "message": message
     }
+
 
 @server_router.get("/{server_id}/players", response_model=ServerPlayersResponse)
 def get_players(server_id: int):

@@ -1,9 +1,8 @@
 import json
 import os
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 import requests
 from mcstatus import MinecraftServer as MCStatusServer
@@ -157,7 +156,6 @@ class MinecraftServer:
             player.is_online = True
             players[name] = player
         return players
-
 
     def start(self) -> bool:
         if self.server_manager_data.installed and self.pid == 0:
