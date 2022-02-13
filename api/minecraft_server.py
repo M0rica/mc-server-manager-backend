@@ -228,7 +228,7 @@ class MinecraftServer:
             if player.is_online:
                 data["online"].append(player)
             elif player.is_banned:
-                data["ban"].append(player)
+                data["banned"].append(player)
             elif player.is_op:
                 data["op"].append(player)
         return data
