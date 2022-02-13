@@ -118,8 +118,9 @@ class MinecraftServer:
             self.starting = False
             self.mcstatus_server = None
         elif status == "running":
-            print("creating status server")
-            self.mcstatus_server = MCStatusServer("localhost", self.network_config.port)
+            if self.mcstatus_server is None:
+                print("creating status server")
+                self.mcstatus_server = MCStatusServer("localhost", self.network_config.port)
         if self.starting:
             self.starting = "For help, type \"help\"" not in self.process_handler.get_process(self.pid).logs
         self._update_players()
